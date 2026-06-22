@@ -1,6 +1,7 @@
 import re, os
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Font
 from rich.console import Console
 from . import config
 
@@ -66,7 +67,11 @@ def save_to_excel(data):
     ws = wb.active
     assert ws is not None
     ws.append(["Price", "Link"])
+    link_style = Font(color="0563C1", underline="single")
     for item in data:
         ws.append([item["price"], item["link"]])
+        cell = ws.cell(row=ws.max_row, column=2)
+        cell.hyperlink = item["link"]
+        cell.font = link_style
     wb.save(file_path)
     return file_path
