@@ -11,6 +11,12 @@ Additional Python libraries clean the data from other advertisements.
 OpenPyXL converts all that data into an elegant .XLSX file.
 The file updates after each execution of the script.
 
+<img width="850" height="500" alt="image" src="https://github.com/user-attachments/assets/db5a3ef2-a5a2-42b7-ae71-0bf91505b938" />
+
+
+<img width="850" height="500" alt="image" src="https://github.com/user-attachments/assets/bb6cbd2b-de5e-4353-b29e-e639ac6735e4" />
+
+
 ---
 
 ## Setup
