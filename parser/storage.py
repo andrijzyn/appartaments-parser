@@ -20,30 +20,39 @@ def get_latest_file():
 
 
 def load_previous_data():
-    """Load previously saved data from Excel files."""
-    folder = save_dir
-    files = sorted([f for f in os.listdir(folder) if f.endswith(".xlsx")],
-                   key=lambda f: os.path.getmtime(os.path.join(folder, f)),
-                   reverse=True)
+    """Load previously saved data from all Excel files."""
+    files = sorted(
+        [f for f in os.listdir(save_dir) if f.endswith(".xlsx")],
+        key=lambda f: os.path.getmtime(os.path.join(save_dir, f)),
+        reverse=True,
+    )
     if not files:
         _console.print("[dim]No previous data found.[/dim]")
         return set()
-    last_file = os.path.join(folder, files[0])
-    try:
-        wb = load_workbook(last_file, data_only=True)
-        ws = wb.active
-        assert ws is not None
-        previous_links: set[str] = set()
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            cell = row[1]
-            if isinstance(cell, str):
-                previous_links.add(cell)
-        wb.close()
-        _console.print(f"[dim]Loaded {len(previous_links)} previous listings from {last_file}[/dim]")
-        return previous_links
-    except Exception as e:
-        _console.print(f"[yellow]⚠ Failed to load previous data: {e}[/yellow]")
-        return set()
+    previous_links: set[str] = set()
+    for filename in files:
+        filepath = os.path.join(save_dir, filename)
+        try:
+            wb = load_workbook(filepath, data_only=True)
+            ws = wb.active
+            assert ws is not None
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                cell = row[1]
+                if isinstance(cell, str):
+                    previous_links.add(cell)
+            wb.close()
+        except Exception as e:
+            _console.print(f"[yellow]⚠ Skipped {filename}: {e}[/yellow]")
+    _console.print(f"[dim]Loaded {len(previous_links)} previous listings from {len(files)} file(s)[/dim]")
+    return previous_links
+
+
+def clean_data():
+    """Delete all saved Excel files."""
+    files = [f for f in os.listdir(save_dir) if f.endswith(".xlsx")]
+    for f in files:
+        os.remove(os.path.join(save_dir, f))
+    return len(files)
 
 
 def save_to_excel(data):
