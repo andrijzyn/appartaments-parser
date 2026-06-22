@@ -47,6 +47,32 @@ def load_previous_data():
     return previous_links
 
 
+def load_full_data():
+    """Load all listings (price + link) from all saved Excel files."""
+    files = sorted(
+        [f for f in os.listdir(save_dir) if f.endswith(".xlsx")],
+        key=lambda f: os.path.getmtime(os.path.join(save_dir, f)),
+        reverse=True,
+    )
+    all_data = []
+    seen: set[str] = set()
+    for filename in files:
+        filepath = os.path.join(save_dir, filename)
+        try:
+            wb = load_workbook(filepath, data_only=True)
+            ws = wb.active
+            assert ws is not None
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                price, link = row[0], row[1]
+                if isinstance(link, str) and link not in seen:
+                    seen.add(link)
+                    all_data.append({"price": str(price) if price else None, "link": link})
+            wb.close()
+        except Exception as e:
+            _console.print(f"[yellow]⚠ Skipped {filename}: {e}[/yellow]")
+    return all_data
+
+
 def clean_data():
     """Delete all saved Excel files."""
     files = [f for f in os.listdir(save_dir) if f.endswith(".xlsx")]

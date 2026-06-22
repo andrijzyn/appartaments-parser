@@ -9,10 +9,13 @@ arg_parser.add_argument("--pages", type=int, default=100, help="Max pages to scr
 arg_parser.add_argument("--min-price", type=int, help="Override min price from config")
 arg_parser.add_argument("--max-price", type=int, help="Override max price from config")
 arg_parser.add_argument("--max-square", type=int, help="Override max square meters from config")
+arg_parser.add_argument("--graph", action="store_true", help="Show price line chart in terminal")
 flags = arg_parser.parse_args()
 
 from parser import scraper, storage, driver
 from parser import config as parser_config
+import re
+import plotext as plt
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
@@ -38,6 +41,35 @@ if __name__ == "__main__":
     collected_data, count_ads = scraper.collect_data(flags.pages, retry=flags.iter)
     file_path = storage.save_to_excel(collected_data)
     driver.quit()
+
+    display_data = collected_data or (storage.load_full_data() if flags.graph else [])
+
+    if flags.graph:
+        prices = []
+        for item in display_data:
+            if item["price"]:
+                match = re.search(r"\d+", item["price"].replace(".", "").replace(",", ""))
+                if match:
+                    prices.append(int(match.group()))
+        if prices:
+            max_p = parser_config["parser"]["max_price"]
+            min_p = parser_config["parser"]["min_price"]
+            prices = [p for p in prices if p <= max_p]
+
+            bucket_start = (min_p // 100) * 100
+            bucket_end = ((max_p // 100) + 1) * 100
+            x_values, counts = [], []
+            for start in range(bucket_start, bucket_end, 100):
+                x_values.append(start + 50)
+                counts.append(sum(1 for p in prices if start <= p < start + 100))
+
+            console.print()
+            plt.clf()
+            plt.plot(x_values, counts, marker="braille")
+            plt.title("Price distribution per 100€" + ("" if collected_data else " (previous data)"))
+            plt.xlabel("Price range (€)")
+            plt.ylabel("Listings")
+            print(plt.build())
 
     if collected_data:
         console.print()
@@ -65,3 +97,6 @@ if __name__ == "__main__":
             )
     else:
         console.print(Panel("[yellow]No new listings found.[/yellow]", border_style="yellow", title="Done"))
+
+    if flags.graph:
+        console.input("\n[dim]Press Enter to exit...[/dim]")

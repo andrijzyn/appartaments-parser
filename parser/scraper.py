@@ -79,6 +79,11 @@ def collect_data(pages, retry=False):
             all_data.extend(unique_data)
             _console.print(f"  Page [bold]{page}[/bold]  [green]+{unique_count}[/green] new")
             total_ads += unique_count
-            empty_pages = 0
+            if unique_count == 0:
+                empty_pages += 1
+                if empty_pages >= 2:
+                    break
+            else:
+                empty_pages = 0
 
     return all_data, total_ads
