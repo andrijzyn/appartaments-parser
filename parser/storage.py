@@ -1,7 +1,10 @@
 import re, os
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
+from rich.console import Console
 from . import config
+
+_console = Console()
 
 save_dir: str = config["directories"]["save"]
 os.makedirs(save_dir, exist_ok=True)
@@ -22,7 +25,7 @@ def load_previous_data():
                    key=lambda f: os.path.getmtime(os.path.join(folder, f)),
                    reverse=True)
     if not files:
-        print("ℹ️ No previous data found.")
+        _console.print("[dim]No previous data found.[/dim]")
         return set()
     last_file = os.path.join(folder, files[0])
     try:
@@ -35,18 +38,17 @@ def load_previous_data():
             if isinstance(cell, str):
                 previous_links.add(cell)
         wb.close()
-        print(f"ℹ️ Loaded {len(previous_links)} previous listings from {last_file}")
+        _console.print(f"[dim]Loaded {len(previous_links)} previous listings from {last_file}[/dim]")
         return previous_links
     except Exception as e:
-        print(f"⚠️ Failed to load previous data: {e}")
+        _console.print(f"[yellow]⚠ Failed to load previous data: {e}[/yellow]")
         return set()
 
 
 def save_to_excel(data):
     """Save the collected data to an Excel file."""
     if not data:
-        print("ℹ️ No data to save.")
-        return
+        return None
     date_str = datetime.now().strftime("%d %B %H-%M")
     folder = save_dir
     os.makedirs(folder, exist_ok=True)
@@ -67,4 +69,4 @@ def save_to_excel(data):
     for item in data:
         ws.append([item["price"], item["link"]])
     wb.save(file_path)
-    print(f"✅ Data saved in {file_path}")
+    return file_path
