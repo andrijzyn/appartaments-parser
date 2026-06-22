@@ -1,29 +1,38 @@
+"""CLI entry point for the Njuskalo apartment listing scraper."""
 import argparse
+import re
 import subprocess
 
-arg_parser = argparse.ArgumentParser(description="Njuskalo apartment parser")
-arg_parser.add_argument("--open", action="store_true", help="Open result file after parsing")
-arg_parser.add_argument("--iter", action="store_true", help="Retry empty pages before skipping")
-arg_parser.add_argument("--clean", action="store_true", help="Delete all previous data files before running")
-arg_parser.add_argument("--pages", type=int, default=100, help="Max pages to scrape (default: 100)")
-arg_parser.add_argument("--min-price", type=int, help="Override min price from config")
-arg_parser.add_argument("--max-price", type=int, help="Override max price from config")
-arg_parser.add_argument("--max-square", type=int, help="Override max square meters from config")
-arg_parser.add_argument("--graph", action="store_true", help="Show price line chart in terminal")
-flags = arg_parser.parse_args()
-
-from parser import scraper, storage, driver
-from parser import config as parser_config
-import re
 import plotext as plt
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 
-console = Console()
 
-if __name__ == "__main__":
+def parse_args():
+    """Parse and return CLI arguments."""
+    p = argparse.ArgumentParser(description="Njuskalo apartment parser")
+    p.add_argument("--open", action="store_true", help="Open result file after parsing")
+    p.add_argument("--iter", action="store_true", help="Retry empty pages before skipping")
+    p.add_argument("--clean", action="store_true", help="Delete all previous data files")
+    p.add_argument("--pages", type=int, default=100, help="Max pages to scrape (default: 100)")
+    p.add_argument("--min-price", type=int, help="Override min price from config")
+    p.add_argument("--max-price", type=int, help="Override max price from config")
+    p.add_argument("--max-square", type=int, help="Override max square meters from config")
+    p.add_argument("--graph", action="store_true", help="Show price distribution chart")
+    return p.parse_args()
+
+
+def main():
+    """Run the scraper."""
+    # pylint: disable=import-outside-toplevel
+    from parser import scraper, storage, driver
+    from parser import config as parser_config
+
+    flags = parse_args()
+    console = Console()
+
     if flags.min_price:
         parser_config["parser"]["min_price"] = flags.min_price
     if flags.max_price:
@@ -60,14 +69,19 @@ if __name__ == "__main__":
             title="Done",
         ))
         if flags.open:
-            subprocess.Popen(
+            with subprocess.Popen(
                 ["xdg-open", file_path],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 start_new_session=True,
-            )
+            ):
+                pass
     else:
-        console.print(Panel("[yellow]No new listings found.[/yellow]", border_style="yellow", title="Done"))
+        console.print(Panel(
+            "[yellow]No new listings found.[/yellow]",
+            border_style="yellow",
+            title="Done",
+        ))
 
     if flags.graph:
         prices = []
@@ -91,3 +105,9 @@ if __name__ == "__main__":
             plt.ylabel("Price range (€)")
             plt.xlabel("Listings")
             print(plt.build())
+
+        console.input("\n[dim]Press Enter to exit...[/dim]")
+
+
+if __name__ == "__main__":
+    main()

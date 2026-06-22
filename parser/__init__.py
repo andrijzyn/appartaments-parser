@@ -1,3 +1,4 @@
+"""Njuskalo apartment scraper package — initialises browser and config."""
 import tomllib
 from . import driver
 

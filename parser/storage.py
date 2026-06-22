@@ -1,7 +1,10 @@
-import re, os
+"""Excel storage helpers — load previous listings and save new ones."""
+import os
+import re
 from datetime import datetime
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
+from openpyxl.utils.exceptions import InvalidFileException
 from rich.console import Console
 from . import config
 
@@ -9,6 +12,7 @@ _console = Console()
 
 save_dir: str = config["directories"]["save"]
 os.makedirs(save_dir, exist_ok=True)
+
 
 def get_latest_file():
     """Get the latest Excel file from the save directory."""
@@ -20,7 +24,7 @@ def get_latest_file():
 
 
 def load_previous_data():
-    """Load previously saved data from all Excel files."""
+    """Load link set from all saved Excel files for deduplication."""
     files = sorted(
         [f for f in os.listdir(save_dir) if f.endswith(".xlsx")],
         key=lambda f: os.path.getmtime(os.path.join(save_dir, f)),
@@ -41,9 +45,12 @@ def load_previous_data():
                 if isinstance(cell, str):
                     previous_links.add(cell)
             wb.close()
-        except Exception as e:
+        except (InvalidFileException, AssertionError, KeyError) as e:
             _console.print(f"[yellow]⚠ Skipped {filename}: {e}[/yellow]")
-    _console.print(f"[dim]Loaded {len(previous_links)} previous listings from {len(files)} file(s)[/dim]")
+    _console.print(
+        f"[dim]Loaded {len(previous_links)} previous listings "
+        f"from {len(files)} file(s)[/dim]"
+    )
     return previous_links
 
 
@@ -68,7 +75,7 @@ def load_full_data():
                     seen.add(link)
                     all_data.append({"price": str(price) if price else None, "link": link})
             wb.close()
-        except Exception as e:
+        except (InvalidFileException, AssertionError, KeyError) as e:
             _console.print(f"[yellow]⚠ Skipped {filename}: {e}[/yellow]")
     return all_data
 
@@ -86,9 +93,7 @@ def save_to_excel(data):
     if not data:
         return None
     date_str = datetime.now().strftime("%d %B %H-%M")
-    folder = save_dir
-    os.makedirs(folder, exist_ok=True)
-    file_path = os.path.join(folder, f"njuskalo_listings {date_str}.xlsx")
+    file_path = os.path.join(save_dir, f"njuskalo_listings {date_str}.xlsx")
 
     def extract_price(entry):
         price = entry["price"]

@@ -1,4 +1,6 @@
+"""Page scraping logic for njuskalo.hr apartment listings."""
 import time
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -12,7 +14,7 @@ def get_element_text(ad, by, value):
     """Get the text of an element."""
     try:
         return ad.find_element(by, value).text.strip()
-    except Exception:
+    except NoSuchElementException:
         return None
 
 
@@ -20,7 +22,7 @@ def get_element_attr(ad, by, value, attr):
     """Get an attribute of an element."""
     try:
         return ad.find_element(by, value).get_attribute(attr)
-    except Exception:
+    except NoSuchElementException:
         return None
 
 
@@ -57,11 +59,14 @@ def collect_data(pages, retry=False):
         task = progress.add_task("[dim]Starting...[/dim]", total=None)
         for page in range(1, pages):
             progress.update(task, description=f"[dim]Scraping page {page}...[/dim]")
-            url = (f"https://www.njuskalo.hr/iznajmljivanje-stanova/zagreb?"
-                   f"price[min]={config["parser"]["min_price"]}&"
-                   f"price[max]={config["parser"]["max_price"]}&"
-                   f"page={page}&"
-                   f"livingArea[max]={config["parser"]["max_square"]}")
+            min_price = config["parser"]["min_price"]
+            max_price = config["parser"]["max_price"]
+            max_square = config["parser"]["max_square"]
+            url = (
+                f"https://www.njuskalo.hr/iznajmljivanje-stanova/zagreb?"
+                f"price[min]={min_price}&price[max]={max_price}"
+                f"&page={page}&livingArea[max]={max_square}"
+            )
             driver.get(url)
             data, _ = parse_listings(driver)
             if not data and retry:
