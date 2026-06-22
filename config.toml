@@ -1,0 +1,7 @@
+[parser]
+min_price = 200
+max_price = 400
+max_square = 45
+
+[directories]
+save = "data"
