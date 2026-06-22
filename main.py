@@ -42,35 +42,6 @@ if __name__ == "__main__":
     file_path = storage.save_to_excel(collected_data)
     driver.quit()
 
-    display_data = collected_data or (storage.load_full_data() if flags.graph else [])
-
-    if flags.graph:
-        prices = []
-        for item in display_data:
-            if item["price"]:
-                match = re.search(r"\d+", item["price"].replace(".", "").replace(",", ""))
-                if match:
-                    prices.append(int(match.group()))
-        if prices:
-            max_p = parser_config["parser"]["max_price"]
-            min_p = parser_config["parser"]["min_price"]
-            prices = [p for p in prices if p <= max_p]
-
-            bucket_start = (min_p // 100) * 100
-            bucket_end = ((max_p // 100) + 1) * 100
-            x_values, counts = [], []
-            for start in range(bucket_start, bucket_end, 100):
-                x_values.append(start + 50)
-                counts.append(sum(1 for p in prices if start <= p < start + 100))
-
-            console.print()
-            plt.clf()
-            plt.plot(x_values, counts, marker="braille")
-            plt.title("Price distribution per 100€" + ("" if collected_data else " (previous data)"))
-            plt.xlabel("Price range (€)")
-            plt.ylabel("Listings")
-            print(plt.build())
-
     if collected_data:
         console.print()
         table = Table(show_lines=True)
@@ -99,4 +70,24 @@ if __name__ == "__main__":
         console.print(Panel("[yellow]No new listings found.[/yellow]", border_style="yellow", title="Done"))
 
     if flags.graph:
-        console.input("\n[dim]Press Enter to exit...[/dim]")
+        prices = []
+        for item in storage.load_full_data():
+            if item["price"]:
+                match = re.search(r"\d+", item["price"].replace(".", "").replace(",", ""))
+                if match:
+                    prices.append(int(match.group()))
+        if prices:
+            bucket_start = (min(prices) // 100) * 100
+            bucket_end = ((max(prices) // 100) + 1) * 100
+            x_values, counts = [], []
+            for start in range(bucket_start, bucket_end, 100):
+                x_values.append(start + 50)
+                counts.append(sum(1 for p in prices if start <= p < start + 100))
+
+            console.print()
+            plt.clf()
+            plt.plot(x_values, counts, marker="braille")
+            plt.title("Price distribution per 100€")
+            plt.ylabel("Price range (€)")
+            plt.xlabel("Listings")
+            print(plt.build())
