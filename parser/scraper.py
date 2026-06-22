@@ -5,23 +5,17 @@ seen_links = set()
 
 def get_element_text(ad, by, value):
     """Get the text of an element."""
-    try:
-        return ad.find_element(by, value).text.strip()
-    except Exception:
-        return None
+    return ad.find_element(by, value).text.strip()
 
 
 def get_element_attr(ad, by, value, attr):
     """Get an attribute of an element."""
-    try:
-        return ad.find_element(by, value).get_attribute(attr)
-    except Exception:
-        return None
+    return ad.find_element(by, value).get_attribute(attr)
 
 
-def parse_listings(driver):
+def parse_listings(parse_driver):
     """Parse the listings on the current page."""
-    ads = driver.find_elements(By.CLASS_NAME, "EntityList-item")
+    ads = parse_driver.find_elements(By.CLASS_NAME, "EntityList-item")
     listings = []
 
     if not ads:

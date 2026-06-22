@@ -3,7 +3,7 @@ from datetime import datetime
 from openpyxl import Workbook, load_workbook
 from . import config
 
-save_dir = config["directories"]["save"]
+save_dir: str = config["directories"]["save"]
 os.makedirs(save_dir, exist_ok=True)
 
 def get_latest_file():
@@ -28,7 +28,12 @@ def load_previous_data():
     try:
         wb = load_workbook(last_file, data_only=True)
         ws = wb.active
-        previous_links = {row[1] for row in ws.iter_rows(min_row=2, values_only=True) if row[1]}
+        assert ws is not None
+        previous_links: set[str] = set()
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            cell = row[1]
+            if isinstance(cell, str):
+                previous_links.add(cell)
         wb.close()
         print(f"ℹ️ Loaded {len(previous_links)} previous listings from {last_file}")
         return previous_links
@@ -47,16 +52,17 @@ def save_to_excel(data):
     os.makedirs(folder, exist_ok=True)
     file_path = os.path.join(folder, f"njuskalo_listings {date_str}.xlsx")
 
-    def extract_price(item):
-        price = item["price"]
+    def extract_price(entry):
+        price = entry["price"]
         if price is None:
-            return float("inf")  # or some large number to handle missing prices
+            return float("inf")
         match = re.search(r"\d+", price.replace(".", "").replace(",", ""))
         return int(match.group()) if match else float("inf")
 
     data.sort(key=extract_price)
     wb = Workbook()
     ws = wb.active
+    assert ws is not None
     ws.append(["Price", "Link"])
     for item in data:
         ws.append([item["price"], item["link"]])
